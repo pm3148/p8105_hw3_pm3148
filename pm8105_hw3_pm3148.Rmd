@@ -10,4 +10,159 @@ output: github_document
 library(tidyverse)
 library(p8105.datasets)
 ```
+# Problem 1: Instacart
+```{r}
+#Load data
+data("instacart")
+```
+
+```{r}
+#How many aisles are there, and which aisles are the most items ordered from?
+
+
+instacart%>%
+  group_by(aisle)%>%
+  summarize(count = n())%>%
+  arrange(desc(count))
+
+
+```
+The table shows that we have 134 unique aisles represented in the dataset. Fresh vegetables, fresh fruits, and packages vegetable fruits are the aisles with the largest amount of records/purchases. 
+
+
+```{r}
+#Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
+instacart%>%
+  group_by(aisle)%>%
+  summarize(count = n())%>%
+  filter(count > 10000)%>%
+  arrange(desc(count))%>%
+  ggplot(aes(x=reorder(aisle, count), y = count)) + 
+  geom_bar(stat="identity")+
+  coord_flip()+
+  labs(caption = "Limited to aisles with more than 10000 items ordered") + 
+  xlab("Aisle Name") + ylab("Count of Items Ordered") + ggtitle("Number of items ordered by aisle") +
+  theme(axis.text.y = element_text(size =7))
+
+```
+Fresh vegetables, fresh fruits, and packaged vegetables fruits have the highest amount of items ordered from. Butter, oils vinegars, and dry pasta have the lowest amount of items in this subset (items > 10,000). 
+```{r}
+#Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
+instacart%>%
+  group_by(aisle, product_name)%>%
+  filter(aisle == "baking ingredients" | aisle =="dog food care" | aisle =="packaged vegetables fruits")%>%
+  summarise(count = n())%>%
+  top_n(n=3, wt=count)%>%
+  arrange(desc(count), .by_group = TRUE)
+
+instacart%>%
+  group_by(aisle, product_name)%>%
+  filter(aisle == "baking ingredients" | aisle =="dog food care" | aisle =="packaged vegetables fruits")%>%
+  summarise(count = n())%>%
+  filter(min_rank(desc(count))<4)%>%
+  arrange(desc(count), .by_group = TRUE)
+  
+  
+```
+
+```{r}
+#Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+  instacart%>%
+  group_by(product_name, order_dow)%>%
+  filter(product_name =="Pink Lady Apples" | product_name =="Coffee Ice Cream")%>%
+  summarise(mean_hour = mean(order_hour_of_day))%>%
+  pivot_wider(names_from = order_dow,
+              values_from = mean_hour)%>%
+  rename(Sunday =`0`,
+         Monday =`1`,
+         Tuesday =`2`,
+         Wednesday =`3`,
+         Thursday =`4`,
+         Friday =`5`,
+         Saturday =`6`)
+```
+# Problem 2 
+```{r}
+#Data Cleaning 
+data("brfss_smart2010")
+
+brfss<- brfss_smart2010%>%
+  janitor::clean_names()
+
+brfss%>%
+  distinct(topic)
+#Overall Health topic is all coded the same way ("Overall Health")
+
+brfss%>%
+  filter(topic == "Overall Health")%>%
+  distinct(response)
+
+brfss_cln<- brfss%>%
+  filter(topic == "Overall Health")%>%
+  mutate(response = factor(response, levels = c("Poor", "Fair", "Good", "Very good", "Excellent")))
+
+```
+```{r}
+#In 2002, which states were observed at 7 or more locations? What about in 2010?
+brfss_cln%>%
+  filter(year==2002)%>%
+  group_by(locationabbr)%>%
+  summarise(location_count = n_distinct(locationdesc))%>%
+  filter(location_count >=7)
+
+#In 2010 
+brfss_cln%>%
+  filter(year==2010)%>%
+  group_by(locationabbr)%>%
+  summarise(location_count = n_distinct(locationdesc))%>%
+  filter(location_count >=7)
+```
+```{r}
+brfss_cln%>%
+ filter(response =="Excellent")%>%
+  select(year, locationabbr, data_value)%>%
+  group_by(year, locationabbr)%>%
+  mutate(state_avg = mean(data_value))%>%
+  ggplot(aes(x=year, y = state_avg, col = locationabbr)) +
+  geom_line()
+  
+```
+```{r}
+# Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
+brfss_cln%>%
+  filter(locationabbr=="NY")%>%
+  filter(year ==2006 | year==2010)%>%
+  ggplot(aes(x = data_value)) +geom_histogram() +facet_grid(rows=vars(year))
+```
+```{r}
+#Load accelorometer data
+accel<- read_csv('./data/accel_data.csv')
+
+accel<- accel%>%
+  janitor::clean_names()%>%
+  mutate(weekend = ifelse(day =="Saturday" | day =="Sunday", "weekend", "weekday"))
+
+
+```
+Resulting dataset has 35 variables and 1444 observations. The variables include week, day id, day, activity data from minute 1 to minute 1440 of the 24 hour period, and the weekend variable which classifies the observation as a weekend or weekday. 
+
+```{r}
+#Total Activity Variable per Day 
+accel%>%
+  mutate(activity_sum_min = (accel%>%
+                               select(starts_with("activity"))%>%
+                               rowSums()))%>%
+  select(day_id, activity_sum_min)
+```
+```{r}
+#Accelerometer data allows the inspection activity over the course of the day. Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
+accel%>%
+  pivot_longer(activity_1:activity_1440,
+               names_to="activity", 
+               values_to = "activity_counts")%>%
+  separate(activity, c(NA, "minute_of_day"))%>%
+  mutate(minute_of_day = as.numeric(minute_of_day))%>%
+  filter(day_id==1)%>%
+  ggplot(aes(x = minute_of_day, y = activity_counts, col=day)) + geom_line()
+```
 
