@@ -1,0 +1,13 @@
+---
+title: "p8105_hw3_pm3148"
+author: "Pooja Mukund"
+date: "10/15/2021"
+output: github_document
+---
+
+# Load Libraries
+```{r}
+library(tidyverse)
+library(p8105.datasets)
+```
+
