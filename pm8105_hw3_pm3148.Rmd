@@ -19,14 +19,10 @@ data("instacart")
 
 ```{r}
 #How many aisles are there, and which aisles are the most items ordered from?
-
-
 instacart%>%
   group_by(aisle)%>%
   summarize(count = n())%>%
   arrange(desc(count))
-
-
 ```
 The table shows that we have 134 unique aisles represented in the dataset. Fresh vegetables, fresh fruits, and packages vegetable fruits are the aisles with the largest amount of records/purchases. 
 
@@ -65,7 +61,7 @@ instacart%>%
   
   
 ```
-
+The top three most popular items in the baking ingredients aisles are: Light Brown Sugar, Pure Baking Soda, and Cane Sugar. In dog food care, the three most popular items are Snack Sticks Chicken & Rice Recipe, Small Dog Biscuits, and Organix Chicken and Brown Rice Recipe. The most popular items in packaged vegetable fruits are organic baby spinach, organic raspberries, and organic blueberries. The packaged vegetables fruits aisle category has the highest volume of products being sold with 9784 baby spinach, 5546 raspberries, and 4966 blueberries. Baking ingredients had a volume in the 100s and dog food care had volume between 26-30. 
 ```{r}
 #Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
   instacart%>%
@@ -82,6 +78,8 @@ instacart%>%
          Friday =`5`,
          Saturday =`6`)
 ```
+Coffee Ice Cream was ordered the most on Thursdays. Pink Lady Apples were ordered the most on Wednesdays. Coffee Ice Cream is ordered more than Pink Lady Apples on most days except for Friday. 
+
 # Problem 2 
 ```{r}
 #Data Cleaning 
@@ -117,17 +115,25 @@ brfss_cln%>%
   group_by(locationabbr)%>%
   summarise(location_count = n_distinct(locationdesc))%>%
   filter(location_count >=7)
-```
+```   
+In 2002, there were 6 states observed at 7 or more locations: CT, FL, MA, NC, NJ, and PA. In 2010, there were 14 states observed at 7 or more locations. 
 ```{r}
 brfss_cln%>%
  filter(response =="Excellent")%>%
   select(year, locationabbr, data_value)%>%
   group_by(year, locationabbr)%>%
-  mutate(state_avg = mean(data_value))%>%
+  mutate(state_avg = mean(data_value, na.rm=TRUE))%>%
   ggplot(aes(x=year, y = state_avg, col = locationabbr)) +
-  geom_line()
+  geom_line() +
+  xlab('Year') + ylab('State Average Value')+
+  viridis::scale_color_viridis(
+    name = "Location", 
+    discrete = TRUE
+  )
+
   
 ```
+Plot is showing all of the state averages over time in years. No obvious trends in this plot. Not the most informative plot. It might be better to separate by region (ex. Northeast, Southeast, etc.) so that you can pick up on distinct trends. 
 ```{r}
 # Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
 brfss_cln%>%
@@ -138,8 +144,13 @@ brfss_cln%>%
 brfss_cln%>%
   filter(locationabbr=="NY")%>%
   filter(year ==2006 | year==2010)%>%
-  ggplot(aes(x = data_value, y = response)) + geom_density_ridges(scale = 0.85) +facet_grid(rows=vars(year))
-```
+  ggplot(aes(x = data_value, y = response))+ 
+  geom_density_ridges(scale = 0.85) +
+  facet_grid(rows=vars(year))+
+  xlab('Data Value')+
+  ylab('Response')
+```   
+Plot shows that there is not much of a discrepancy between years 2010 and 2006. Responses for Good, Very Good, and Excellent had higher data_value scores than Fair and Poor. 
 ```{r}
 #Load accelorometer data
 accel<- read_csv('./data/accel_data.csv')
@@ -147,6 +158,7 @@ accel<- read_csv('./data/accel_data.csv')
 accel<- accel%>%
   janitor::clean_names()%>%
   mutate(weekend = ifelse(day =="Saturday" | day =="Sunday", "weekend", "weekday"))
+
 
 
 ```
@@ -159,7 +171,15 @@ accel%>%
                                select(starts_with("activity"))%>%
                                rowSums()))%>%
   select(day_id, activity_sum_min)
+
+accel%>%
+  mutate(activity_sum_min = (accel%>%
+                               select(starts_with("activity"))%>%
+                               rowSums()))%>%
+  select(day_id, activity_sum_min)%>%
+  ggplot(aes(x = day_id, y = activity_sum_min)) + geom_point()+geom_line()
 ```
+There are certain days with only 1440 activity recorded. These may be days where accelerometer did not accurately pick up movement/activity data. There are no obvious trends apparent. 
 ```{r}
 #Accelerometer data allows the inspection activity over the course of the day. Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
 accel%>%
@@ -168,7 +188,14 @@ accel%>%
                values_to = "activity_counts")%>%
   separate(activity, c(NA, "minute_of_day"))%>%
   mutate(minute_of_day = as.numeric(minute_of_day))%>%
-  filter(day_id==1)%>%
-  ggplot(aes(x = minute_of_day, y = activity_counts, col=day)) + geom_line()
-```
+  ggplot(aes(x = minute_of_day, y = activity_counts, col=day))+
+  geom_line() +
+  xlab('Minute of Day')+
+  ylab('Activity Count')+
+  viridis::scale_color_viridis(
+    name = "Location", 
+    discrete = TRUE
+  )
 
+```
+P
