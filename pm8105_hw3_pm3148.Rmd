@@ -9,6 +9,7 @@ output: github_document
 ```{r}
 library(tidyverse)
 library(p8105.datasets)
+library(ggridges)
 ```
 # Problem 1: Instacart
 ```{r}
@@ -132,7 +133,12 @@ brfss_cln%>%
 brfss_cln%>%
   filter(locationabbr=="NY")%>%
   filter(year ==2006 | year==2010)%>%
-  ggplot(aes(x = data_value)) +geom_histogram() +facet_grid(rows=vars(year))
+  ggplot(aes(x = data_value)) +geom_histogram() +facet_wrap(year~response, nrow=2)
+
+brfss_cln%>%
+  filter(locationabbr=="NY")%>%
+  filter(year ==2006 | year==2010)%>%
+  ggplot(aes(x = data_value, y = response)) + geom_density_ridges(scale = 0.85) +facet_grid(rows=vars(year))
 ```
 ```{r}
 #Load accelorometer data
