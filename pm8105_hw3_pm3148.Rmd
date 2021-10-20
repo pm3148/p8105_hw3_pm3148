@@ -64,7 +64,7 @@ instacart%>%
   
 ```
 
-The top three most popular items in the baking ingredients aisles are: Light Brown Sugar, Pure Baking Soda, and Cane Sugar. In dog food care, the three most popular items are Snack Sticks Chicken & Rice Recipe, Small Dog Biscuits, and Organix Chicken and Brown Rice Recipe. The most popular items in packaged vegetable fruits are organic baby spinach, organic raspberries, and organic blueberries. The packaged vegetables fruits aisle category has the highest volume of products being sold with 9784 baby spinach, 5546 raspberries, and 4966 blueberries. Baking ingredients had a volume in the 100s and dog food care had volume between 26-30. 
+The top three most popular items in the baking ingredients aisles are: Light Brown Sugar, Pure Baking Soda, and Cane Sugar. In dog food care, the three most popular items are Snack Sticks Chicken & Rice Recipe, Organix Chicken and Brown Rice Recipe, and Small Dog Biscuits. The most popular items in packaged vegetable fruits are organic baby spinach, organic raspberries, and organic blueberries. The packaged vegetables fruits aisle category has the highest volume of products being sold with 9784 baby spinach, 5546 raspberries, and 4966 blueberries. Baking ingredients had a volume in the 100s and dog food care had volume between 26-30. 
 ```{r}
 #Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
   instacart%>%
@@ -99,7 +99,9 @@ brfss%>%
 brfss%>%
   filter(topic == "Overall Health")%>%
   distinct(response)
+#All responses are labelled in the same format
 
+#Change response to factor variable 
 brfss_cln<- brfss%>%
   filter(topic == "Overall Health")%>%
   mutate(response = factor(response, levels = c("Poor", "Fair", "Good", "Very good", "Excellent")))
@@ -121,7 +123,7 @@ brfss_cln%>%
   filter(location_count >=7)
 ```   
 
-In 2002, there were 6 states observed at 7 or more locations: CT, FL, MA, NC, NJ, and PA. In 2010, there were 14 states observed at 7 or more locations. 
+In 2002, there were 6 states observed at 7 or more locations: CT, FL, MA, NC, NJ, and PA. In 2010, there were 14 states observed at 7 or more locations: CA, CO, FL, MA, MD, NC, NE, NJ, NY, OH, PA, SC, TX, WA. FL, MA, NC, NJ, and PA were observed at 7 or more locations in both years.  
 ```{r}
 ##Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. Make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help).
 
@@ -143,7 +145,7 @@ brfss_cln%>%
   
 ```
 
-Plot is showing all of the state averages over time in years. No obvious trends in this plot. Not the most informative plot. It might be better to separate by region (ex. Northeast, Southeast, etc.) so that you can pick up on distinct trends. 
+Plot is showing all of the state averages over time in years. No obvious trends in this plot. There is a lot of variability in average value year to year for each state. Not the most informative plot. It might be better to separate by region (ex. Northeast, Southeast, etc.) so that you can pick up on distinct trends. 
 ```{r}
 # Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
 brfss_cln%>%
@@ -162,16 +164,18 @@ brfss_cln%>%
   ggtitle("Distribution of Data Value for Year 2006 and 2010")
 ```   
 
-Plot shows that there is not much of a discrepancy between years 2010 and 2006. Responses for Good, Very Good, and Excellent had higher data_value scores than Fair and Poor. 
+Plot shows that there is not much of a discrepancy in data values between years 2010 and 2006. Responses for Good, Very Good, and Excellent had generally higher data_value scores than Fair and Poor. 
 
 ## Problem 3
 ```{r}
 #Load accelorometer data
 accel<- read_csv('./data/accel_data.csv')
 
+#Add weekend variable 
 accel<- accel%>%
   janitor::clean_names()%>%
-  mutate(weekend = ifelse(day =="Saturday" | day =="Sunday", "weekend", "weekday"))
+  mutate(weekend = ifelse(day =="Saturday" | day =="Sunday", "weekend", "weekday"), 
+         day = factor(day, levels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday","Friday", "Saturday")))
 
 
 
@@ -180,7 +184,17 @@ accel<- accel%>%
 Resulting dataset has 35 variables and 1444 observations. The variables include week, day id, day, activity data from minute 1 to minute 1440 of the 24 hour period, and the weekend variable which classifies the observation as a weekend or weekday. 
 
 ```{r}
-#Total Activity Variable per Day 
+#Total Activity Variable per Day of Week 
+accel%>%
+  mutate(activity_sum_min = (accel%>%
+                               select(starts_with("activity"))%>%
+                               rowSums()))%>%
+  select(day, activity_sum_min)%>%
+  group_by(day)%>%
+  summarise(activity_sum = sum(activity_sum_min))%>%
+knitr::kable()
+
+#Total Activity per Day 
 accel%>%
   mutate(activity_sum_min = (accel%>%
                                select(starts_with("activity"))%>%
@@ -192,10 +206,17 @@ accel%>%
                                select(starts_with("activity"))%>%
                                rowSums()))%>%
   select(day_id, activity_sum_min)%>%
-  ggplot(aes(x = day_id, y = activity_sum_min)) + geom_point()+geom_line()
+  ggplot(aes(x = day_id, y = activity_sum_min)) + 
+  geom_point()+
+  geom_line()+
+  geom_smooth()+
+  xlab("Day")+
+  ylab("Activity Sum")
 ```
+Looking at the the table for activity per Day of Week, we can see that Friday has the highest activity and then Wednesday followed by Thursday. Saturday has the lowest activity. 
 
-There are certain days with only 1440 activity recorded. These may be days where accelerometer did not accurately pick up movement/activity data. There are no obvious trends apparent. 
+There are certain days with only 1440 activity recorded. These may be days where accelerometer did not accurately pick up movement/activity data. I have included a plot of the data values by day ID to have a visual representation. It seems that in the first 15 days there is increasing activity and after day 15 there is a downward trend which picks back up around day 25. 
+
 ```{r}
 #Accelerometer data allows the inspection activity over the course of the day. Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
 accel%>%
